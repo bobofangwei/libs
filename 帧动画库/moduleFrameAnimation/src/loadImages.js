@@ -1,4 +1,7 @@
 var _id = 0;
+const STATE_LOADING = 'loading';
+const STATE_SUCCESS = 'success';
+const STATE_ERROR = 'error';
 /**
  * 异步加载图片
  * @param  {Array}   imgs     待加载的图片src数组[src1,src2,..., srcN]
@@ -15,27 +18,34 @@ function loadImage(imgs, callback, timeout) {
         item.src = imgs[i];
         item.img = new Image();
         item.img.src = item.src;
-        item.id = '_img_' + (++_id);
+        item.img.onerror = errorHandler(item);
         item.img.onload = loadHandler(item);
-        item.img.onerror = errorHandler(item);        
+        item.status = STATE_LOADING;
+        item.id = '_img_' + (++_id);
         window[item.id] = item;
         count++;
     }
     if (!count) {
-        done(success);
+        callback(success);
     }
     if (timeout) {
         timeoutId = setTimeout(timeoutHandler, timeout);
     }
 
     function loadHandler(item) {
-        success = success && true;
-        done(item);
+        return function() {
+            success = success && true;
+            item.status = STATE_SUCCESS;
+            done(item);
+        };
     }
 
     function errorHandler(item) {
-        success = false;
-        done(item);
+        return function() {
+            success = false;
+            item.status = STATE_ERROR;
+            done(item);
+        };
     }
 
     function timeoutHandler() {
