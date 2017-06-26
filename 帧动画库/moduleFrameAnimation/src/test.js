@@ -1,0 +1,1 @@
+import FrameAnimation from './frameAnimation';

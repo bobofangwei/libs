@@ -1,18 +1,17 @@
-var path=require('path');
-var HtmlWebpackPlugin=require('html-webpack-plugin');
+var path = require('path');
+var HtmlWebpackPlugin = require('html-webpack-plugin');
 
-module.exports={
-    context:__dirname,
-    entry:'./src/frameanimation.js',
-    output:{
-        filename:'js/[name].js',
-        path:__dirname+'/build'
+module.exports = {
+    context: __dirname,
+    entry: './src/test.js',
+    output: {
+        filename: 'js/[name].js',
+        path: __dirname + '/build'
     },
-    plugins:[
+    plugins: [
         new HtmlWebpackPlugin({
-            filename:'index.html',
-            template:path.join(__dirname,'index.html'),
-            inject:'body'
+            filename: 'index.html',
+            template: 'index.html'
         })
     ]
 };

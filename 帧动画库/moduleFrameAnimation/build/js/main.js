@@ -69,8 +69,17 @@
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__loadImages__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__timeline_js__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__frameAnimation__ = __webpack_require__(1);
+
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__loadImages__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__timeline_js__ = __webpack_require__(3);
 
 
 
@@ -84,9 +93,67 @@ var FrameAnimation = {
     init: function() {
         this.taskQueue = [];
         this.timeline = Object.create(__WEBPACK_IMPORTED_MODULE_1__timeline_js__["a" /* default */]);
-        timeline.init();
+        this.timeline.init();
         this.index = 0;
         this.state = STATE_INITAL;
+    },
+    //预加载图片
+    //虽然预加载图片是异步加载的，但是系统后台自发的异步加载
+    //并不需要调用timeline，因此类型为sync
+    loadImages: function(imgList) {
+        //next在_runTask方法中给参数赋值
+        var taskFn = function(next) {
+            __WEBPACK_IMPORTED_MODULE_0__loadImages__["a" /* default */](imgList, next);
+        };
+        return this._add(taskFn, TASK_SYNC);
+    },
+    //改变图片背景位置，实现帧动画
+    //图片的每一种位置状态，对应onEnterFrame中的一帧动作
+    //需要调用timeline完成，因此type为Asycn
+    changePosition: function(ele, positions, imgUrl) {
+        var len = positions.length;
+        var self = this;
+        var taskFn = function(next, time) {
+            if (imgUrl) {
+                ele.style.backgroundImage = 'url(' + imgUrl + ')';
+            }
+            //|0相当于向下取整
+            var index = Math.min(time / self.interval | 0, len - 1);
+            var positionArr = positions[index].split(' ');
+            ele.style.backgroundPosition = positionArr[0] + 'px ' + positionArr[1] + 'px';
+            if (index >= len - 1) {
+                next();
+            }
+        };
+        var type = TASK_ASYNC;
+        return this._add(taskFn, type);
+    },
+    //改变背景图片链接
+    //每一份链接，对应onEnterFrame中的一帧动作
+    //需要调用timeline完成，因此time为Async
+    changeSrc: function(ele, imgList) {
+        var len = imgList.length;
+        var self = this;
+        var taskFn = function(next, time) {
+            var index = Math.min(time / self.interval | 0, len - 1);
+            ele.style.backgroundImage = 'url(' + imgList[index] + ')';
+            if (index >= len - 1) {
+                next();
+            }
+        };
+        var type = TASK_ASYNC;
+        return this._add(taskFn, type);
+    },
+    //高级用法，用于自定义每一帧要做的事情
+    enterFrame: function(taskFn) {
+        return this._add(taskFn, TASK_SYNC);
+    },
+    then: function(callback) {
+        var taskFn = function(next) {
+            callback();
+            next();
+        };
+        return this._add(taskFn, TASK_SYNC);
     },
     start: function(interval) {
         if (this.state !== STATE_INITAL) {
@@ -123,6 +190,34 @@ var FrameAnimation = {
         this.timeline = null;
         this.index = 0;
         return this;
+    },
+    //重复上一个任务
+    //times为任务重复的次数
+    repeat: function(times) {
+        var self = this;
+        var taskFn = function(next, time) {
+            if (typeof times === 'undefined') {
+                //说明重复无限次
+                self.index--;
+                self._runTask();
+                return;
+            }
+            if (times) {
+                times--;
+                self.index--;
+                self._runTask();
+            } else {
+                //达到重复次数，则跳转到下一个任务
+                var task = self.taskQueue[self.index];
+                self._next();
+            }
+        };
+        var type = TASK_SYNC;
+        return this._add(taskFn, type);
+    },
+    //无线重复上一个任务
+    repeatForever: function() {
+        this.repeat();
     },
     _add: function(taskFn, type) {
         this.taskQueue.push({
@@ -175,14 +270,12 @@ var FrameAnimation = {
     }
 
 };
-var getFrameAnimation = function() {
-    var frameAnimation = Object.create(FrameAnimation);
-    frameAnimation.init();
-};
+ 
+/* unused harmony default export */ var _unused_webpack_default_export = (FrameAnimation);
 
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -255,11 +348,11 @@ function loadImage(imgs, callback, timeout) {
 
     }
 }
-/* unused harmony default export */ var _unused_webpack_default_export = (loadImage);
+/* harmony default export */ __webpack_exports__["a"] = (loadImage);
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
