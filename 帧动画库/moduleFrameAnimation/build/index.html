@@ -1,10 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>实现帧动画库</title>
+    <style type="text/css">
+    .rabit {
+        position: absolute;
+        left: 100px;
+        width: 102px;
+        height: 80px;
+        background-repeat: no-repeat;
+    }
+    
+    #rabit1 {
+        top: 50px;
+        background-image: url('../asserts/rabbit-big.png');
+    }
+    
+    #rabit2 {
+        top: 200px;
+    }
+    
+    #rabit3 {
+        top: 350px;
+    }
+    
+    #rabit4 {
+        top: 500px;
+    }
+    </style>
 </head>
+
 <body>
-     
+    <div class="rabit" id="rabit1"></div>
+    <div class="rabit" id="rabit2"></div>
+    <div class="rabit" id="rabit3"></div>
+    <div class="rabit" id="rabit4"></div>
 <script type="text/javascript" src="js/main.js"></script></body>
+
 </html>

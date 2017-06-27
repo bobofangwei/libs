@@ -36,9 +36,10 @@ var Timeline = {
         this.state = STATE_INITAL;
     },
     start: function(interval) {
-        if (this.state !== STATE_INITAL) {
+        if (this.state === STATE_START) {
             return;
         }
+        console.log('执行start');
         this.interval = interval || DEFAULT_INTERVAL;
         this.state = STATE_START;
         this.startTime = +new Date();
@@ -49,33 +50,39 @@ var Timeline = {
     // time在startTime中传递
     onEnterFrame: function(time) {},
     stop: function() {
+        console.log('进入stop', this.state === STATE_START);
         if (this.state !== STATE_START) {
             return;
         }
+        console.log('执行stop');
         this.state = STATE_STOP;
         this.passedTime = (+new Date()) - this.startTime;
         cancelAnimationFrame(this.reqId);
+        this.reqId = null;
     },
     restart: function() {
         if (this.state !== STATE_STOP) {
             return;
         }
-        this.state = STATE_START;
         if (!this.passedTime || !this.interval) {
             return;
         }
+        this.state = STATE_START;
         this.__startTimeline((+new Date()) - this.passedTime);
     },
     __startTimeline: function(startTime) {
         var self = this;
         var lastTime = +new Date();
+        this.startTime = startTime;
         nextTick();
+        // console.log('startTime', startTime);
 
         function nextTick() {
+           // self.stop();
             var curTime = +new Date();
             if (curTime - lastTime >= self.interval) {
                 lastTime = curTime;
-                self.onEnterFrame(curTime - startTime);
+                self.onEnterFrame(curTime - self.startTime);
             }
             self.reqId = requestAnimationFrame(nextTick);
         }

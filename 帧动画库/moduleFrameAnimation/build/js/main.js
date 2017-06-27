@@ -72,6 +72,33 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__frameAnimation__ = __webpack_require__(1);
 
 
+function getById(id) {
+    return document.getElementById(id);
+}
+
+var imgs = ['../asserts/rabbit-big.png', '../asserts/rabbit-lose.png', '../asserts/rabbit-win.png'];
+
+function anim1() {
+    var anim = Object.create(__WEBPACK_IMPORTED_MODULE_0__frameAnimation__["a" /* default */]);
+    anim.init();
+    var rabit1 = getById('rabit1');
+    var rightRunningMap = ["0 -854", "-174 -852", "-349 -852", "-524 -852", "-698 -851", "-873 -848"];
+    anim.loadImages(imgs.splice(0, 1)).changePosition(rabit1, rightRunningMap).repeat();
+    anim.start(300);
+    var running = true;
+    rabit1.addEventListener('click', function() {
+        if (running) {
+            console.log('用户点击了stop');
+            anim.stop();
+        } else {
+            anim.restart();
+        }
+        running = !running;
+    });
+}
+
+anim1();
+
 
 /***/ }),
 /* 1 */
@@ -118,10 +145,12 @@ var FrameAnimation = {
                 ele.style.backgroundImage = 'url(' + imgUrl + ')';
             }
             //|0相当于向下取整
-            var index = Math.min(time / self.interval | 0, len - 1);
-            var positionArr = positions[index].split(' ');
+            // console.log('time', time);
+            var index = Math.min(time / self.interval | 0, len);
+            console.log('index-1', index-1);
+            var positionArr = positions[index-1].split(' ');
             ele.style.backgroundPosition = positionArr[0] + 'px ' + positionArr[1] + 'px';
-            if (index >= len - 1) {
+            if (index >= len) {
                 next();
             }
         };
@@ -162,9 +191,16 @@ var FrameAnimation = {
         if (!this.taskQueue.length) {
             return;
         }
+        this.interval = interval;
         this.state = STATE_START;
         this._runTask();
         return this;
+    },
+    stop: function() {
+        if (this.state === STATE_START) {
+            this.timeline.stop();
+            this.state = STATE_STOP;
+        }
     },
     //仅对异步任务有效
     pause: function() {
@@ -198,6 +234,12 @@ var FrameAnimation = {
         var taskFn = function(next, time) {
             if (typeof times === 'undefined') {
                 //说明重复无限次
+                //初始很疑惑，為什麼僅添加了一個taskFn卻能无限次循环
+                //添加taskFn之后，taskQueue的长度加一
+                //执行taskFn时，taskFn内部将index--，因此再次执行上一个任务
+                //而当上一个任务执行完毕（假设上一个任务是changePostion),会调用next()方法
+                //next方法会另index++，同时再次执行taskFn，而taskFn内部又将index--
+                //以此反复执行，就形成了无限次循环的效果
                 self.index--;
                 self._runTask();
                 return;
@@ -208,7 +250,7 @@ var FrameAnimation = {
                 self._runTask();
             } else {
                 //达到重复次数，则跳转到下一个任务
-                var task = self.taskQueue[self.index];
+                // var task = self.taskQueue[self.index];
                 self._next();
             }
         };
@@ -240,6 +282,7 @@ var FrameAnimation = {
             this.dispose();
             return;
         }
+        // console.log('taskQueue index', this.index);
         var task = this.taskQueue[this.index];
         if (task.type === TASK_SYNC) {
             this._runSyncTask(task.taskFn);
@@ -265,13 +308,14 @@ var FrameAnimation = {
         }
         this.timeline.onEnterFrame = function(time) {
             taskFn(next, time);
-        }
+        };
+        // console.log('__runAsync');
         this.timeline.start(this.interval);
     }
 
 };
- 
-/* unused harmony default export */ var _unused_webpack_default_export = (FrameAnimation);
+
+/* harmony default export */ __webpack_exports__["a"] = (FrameAnimation);
 
 
 /***/ }),
@@ -394,9 +438,10 @@ var Timeline = {
         this.state = STATE_INITAL;
     },
     start: function(interval) {
-        if (this.state !== STATE_INITAL) {
+        if (this.state === STATE_START) {
             return;
         }
+        console.log('执行start');
         this.interval = interval || DEFAULT_INTERVAL;
         this.state = STATE_START;
         this.startTime = +new Date();
@@ -407,33 +452,39 @@ var Timeline = {
     // time在startTime中传递
     onEnterFrame: function(time) {},
     stop: function() {
+        console.log('进入stop', this.state === STATE_START);
         if (this.state !== STATE_START) {
             return;
         }
+        console.log('执行stop');
         this.state = STATE_STOP;
         this.passedTime = (+new Date()) - this.startTime;
         cancelAnimationFrame(this.reqId);
+        this.reqId = null;
     },
     restart: function() {
         if (this.state !== STATE_STOP) {
             return;
         }
-        this.state = STATE_START;
         if (!this.passedTime || !this.interval) {
             return;
         }
+        this.state = STATE_START;
         this.__startTimeline((+new Date()) - this.passedTime);
     },
     __startTimeline: function(startTime) {
         var self = this;
         var lastTime = +new Date();
+        this.startTime = startTime;
         nextTick();
+        // console.log('startTime', startTime);
 
         function nextTick() {
+           // self.stop();
             var curTime = +new Date();
             if (curTime - lastTime >= self.interval) {
                 lastTime = curTime;
-                self.onEnterFrame(curTime - startTime);
+                self.onEnterFrame(curTime - self.startTime);
             }
             self.reqId = requestAnimationFrame(nextTick);
         }

@@ -36,10 +36,12 @@ var FrameAnimation = {
                 ele.style.backgroundImage = 'url(' + imgUrl + ')';
             }
             //|0相当于向下取整
-            var index = Math.min(time / self.interval | 0, len - 1);
-            var positionArr = positions[index].split(' ');
+            // console.log('time', time);
+            var index = Math.min(time / self.interval | 0, len);
+            console.log('index-1', index-1);
+            var positionArr = positions[index-1].split(' ');
             ele.style.backgroundPosition = positionArr[0] + 'px ' + positionArr[1] + 'px';
-            if (index >= len - 1) {
+            if (index >= len) {
                 next();
             }
         };
@@ -80,9 +82,16 @@ var FrameAnimation = {
         if (!this.taskQueue.length) {
             return;
         }
+        this.interval = interval;
         this.state = STATE_START;
         this._runTask();
         return this;
+    },
+    stop: function() {
+        if (this.state === STATE_START) {
+            this.timeline.stop();
+            this.state = STATE_STOP;
+        }
     },
     //仅对异步任务有效
     pause: function() {
@@ -116,6 +125,12 @@ var FrameAnimation = {
         var taskFn = function(next, time) {
             if (typeof times === 'undefined') {
                 //说明重复无限次
+                //初始很疑惑，為什麼僅添加了一個taskFn卻能无限次循环
+                //添加taskFn之后，taskQueue的长度加一
+                //执行taskFn时，taskFn内部将index--，因此再次执行上一个任务
+                //而当上一个任务执行完毕（假设上一个任务是changePostion),会调用next()方法
+                //next方法会另index++，同时再次执行taskFn，而taskFn内部又将index--
+                //以此反复执行，就形成了无限次循环的效果
                 self.index--;
                 self._runTask();
                 return;
@@ -126,7 +141,7 @@ var FrameAnimation = {
                 self._runTask();
             } else {
                 //达到重复次数，则跳转到下一个任务
-                var task = self.taskQueue[self.index];
+                // var task = self.taskQueue[self.index];
                 self._next();
             }
         };
@@ -158,6 +173,7 @@ var FrameAnimation = {
             this.dispose();
             return;
         }
+        // console.log('taskQueue index', this.index);
         var task = this.taskQueue[this.index];
         if (task.type === TASK_SYNC) {
             this._runSyncTask(task.taskFn);
@@ -183,10 +199,11 @@ var FrameAnimation = {
         }
         this.timeline.onEnterFrame = function(time) {
             taskFn(next, time);
-        }
+        };
+        // console.log('__runAsync');
         this.timeline.start(this.interval);
     }
 
 };
- 
+
 export default FrameAnimation;
