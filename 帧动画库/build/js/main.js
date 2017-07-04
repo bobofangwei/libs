@@ -69,7 +69,9 @@
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__frameAnimation__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__frameAnimation__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__timeline_js__ = __webpack_require__(1);
+
 
 
 function getById(id) {
@@ -77,13 +79,14 @@ function getById(id) {
 }
 
 var imgs = ['../asserts/rabbit-big.png', '../asserts/rabbit-lose.png', '../asserts/rabbit-win.png'];
-
+//第一个动画，兔子一直在原地走动
 function anim1() {
     var anim = Object.create(__WEBPACK_IMPORTED_MODULE_0__frameAnimation__["a" /* default */]);
     anim.init();
     var rabit1 = getById('rabit1');
     var rightRunningMap = ["0 -854", "-174 -852", "-349 -852", "-524 -852", "-698 -851", "-873 -848"];
-    anim.loadImages(imgs.splice(0, 1)).changePosition(rabit1, rightRunningMap).repeat();
+
+    anim.loadImages(imgs).changePosition(rabit1, rightRunningMap, imgs[0]).repeatForever();
     anim.start(300);
     var running = true;
     rabit1.addEventListener('click', function() {
@@ -96,8 +99,86 @@ function anim1() {
         running = !running;
     });
 }
-
 anim1();
+
+//第三个动画，兔子做出胜利的手势
+function anim3() {
+    var rabit3 = getById('rabit3');
+    var rabbitWinPositions = ["0 0", "-198 0", "-401 0", "-609 0", "-816 0", "0 -96", "-208 -97", "-415 -97", "-623 -97", "-831 -97", "0 -203", "-207 -203", "-415 -203", "-623 -203", "-831 -203", "0 -307", "-206 -307", "-414 -307", "-623 -307"];
+    console.log(rabbitWinPositions.length);
+    var anim = Object.create(__WEBPACK_IMPORTED_MODULE_0__frameAnimation__["a" /* default */]);
+    anim.init();
+    anim.loadImages(imgs).changePosition(rabit3, rabbitWinPositions, imgs[2]).then(function() {
+        console.log('rabit win!');
+    });
+    anim.start(300);
+}
+anim3();
+
+//第四个动画，兔子失败
+function anim4() {
+    var rabit4 = getById('rabit4');
+    var rabbitLoseMap = ["0 0", "-163 0", "-327 0", "-491 0", "-655 0", "-819 0", "0 -135", "-166 -135", "-333 -135", "-500 -135", "-668 -135", "-835 -135", "0 -262"];
+    var anim = Object.create(__WEBPACK_IMPORTED_MODULE_0__frameAnimation__["a" /* default */]);
+    anim.init();
+    anim.loadImages(imgs).changePosition(rabit4, rabbitLoseMap, imgs[1]).then(function() {
+        console.log('rabit lose!');
+    });
+    anim.start(300);
+}
+anim4();
+
+//第二个动画，兔子向右走
+function anim2() {
+    var rabit2 = getById('rabit2');
+    var rightRunningMap = ["0 -854", "-174 -852", "-349 -852", "-524 -852", "-698 -851", "-873 -848"];
+    var leftRunningMap = ["0 -373", "-175 -376", "-350 -377", "-524 -377", "-699 -377", "-873 -379"];
+    var rabbitWinPositions = ["0 0", "-198 0", "-401 0", "-609 0", "-816 0", "0 -96", "-208 -97", "-415 -97", "-623 -97", "-831 -97", "0 -203", "-207 -203", "-415 -203", "-623 -203", "-831 -203", "0 -307", "-206 -307", "-414 -307", "-623 -307"];
+    var anim = Object.create(__WEBPACK_IMPORTED_MODULE_0__frameAnimation__["a" /* default */]);
+    anim.init();
+    var right = true;
+    var initLeft = 100;
+    var endLeft = 400;
+    var frames = 6; // 无论是向右走还是向左走的动作都是有6帧
+    var curFrame = 0;
+    var curLeft = initLeft;
+    var speed = 1;
+    var ratio = 30; //控制步长，将时间同比缩小的有一个比例
+    var position;
+    // 通过right（闭包）来控制前进的方向
+    // 第一次向右边走
+    // 调用repeat实现向左走
+    anim.loadImages(imgs).enterFrame(function(next, time) {
+        if (right) {
+            position = rightRunningMap[curFrame].split(' ');
+            curLeft = Math.min(initLeft + time / ratio * speed, endLeft);
+            if (curLeft >= endLeft) {
+                right = false;
+                curFrame = 0;
+                next();
+                return;
+            }
+        } else {
+            position = leftRunningMap[curFrame].split(' ');
+            curLeft = Math.max(endLeft - time / ratio * speed, initLeft);
+            if (curLeft <= initLeft) {
+                right = true;
+                curFrame = 0;
+                next();
+                return;
+            }
+
+        }
+        if (++curFrame >= frames) {
+            curFrame = 0;
+        }
+        rabit2.style.backgroundImage = 'url(' + imgs[0] + ')';
+        rabit2.style.left = curLeft + 'px';
+        rabit2.style.backgroundPosition = position[0] + 'px ' + position[1] + 'px';
+    }).repeat(1).wait(2000).changePosition(rabit2, rabbitWinPositions, imgs[2]);
+    anim.start(200);
+}
+anim2();
 
 
 /***/ }),
@@ -105,8 +186,114 @@ anim1();
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__loadImages__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__timeline_js__ = __webpack_require__(3);
+// 该模块用于处理异步请求
+const STATE_INITAL = 'inital';
+const STATE_START = 'start';
+const STATE_STOP = 'stop';
+const DEFAULT_INTERVAL = 20;
+/**
+ * raf
+ */
+var requestAnimationFrame = (function() {
+    return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        //所有都不支持，用setTimeout兼容
+        function(callback) {
+            return window.setTimeout(callback, (callback.interval || DEFAULT_INTERVAL)); // make interval as precise as possible.
+        };
+})();
+
+/**
+ * cancel raf
+ */
+var cancelAnimationFrame = (function() {
+    return window.cancelAnimationFrame ||
+        window.webkitCancelAnimationFrame ||
+        window.mozCancelAnimationFrame ||
+        window.oCancelAnimationFrame ||
+        function(id) {
+            window.clearTimeout(id);
+        };
+})();
+
+var Timeline = {
+    init: function() {
+        this.reqId = 0;
+        this.state = STATE_INITAL;
+    },
+    start: function(interval) {
+        if (this.state === STATE_START) {
+            return;
+        }
+        console.log('执行start');
+        this.interval = interval || DEFAULT_INTERVAL;
+        this.state = STATE_START;
+        this.startTime = +new Date();
+        this.__startTimeline(this.startTime);
+
+    },
+    // 参数time为动画开始执行到现在执行的时间
+    // time在startTime中传递
+    onEnterFrame: function(time) {},
+    stop: function() {
+        // console.log('进入stop', this.state === STATE_START);
+        if (this.state !== STATE_START) {
+            return;
+        }
+        console.log('执行stop');
+        this.state = STATE_STOP;
+        this.passedTime = (+new Date()) - this.startTime;
+        cancelAnimationFrame(this.reqId);
+        this.reqId = null;
+    },
+    restart: function() {
+        if (this.state !== STATE_STOP) {
+            return;
+        }
+        if (!this.passedTime || !this.interval) {
+            return;
+        }
+        this.state = STATE_START;
+        this.__startTimeline((+new Date()) - this.passedTime);
+    },
+
+    __startTimeline: function(startTime) {
+        var self = this;
+        var lastTime = +new Date();
+        this.startTime = startTime;
+        nextTick();
+        // console.log('startTime', startTime);
+
+        function nextTick() {
+            var curTime = +new Date();
+            // 这句话的位置很关键，关于这个bug调试了很久
+            // 如果将这句话放在if判断的语句之后
+            // 会发现定时器关闭不了
+            // 这是因为在onenterFrame可能会调用next，next会关闭timelne
+            // 如果放在下面，关闭的是上一次的定时器，紧接着reqId又被马上赋值了
+            self.reqId = requestAnimationFrame(nextTick);
+            if (curTime - lastTime >= self.interval) {
+                lastTime = curTime;
+                self.onEnterFrame(curTime - self.startTime);
+            }
+            // 不能放在这里
+            // self.reqId = requestAnimationFrame(nextTick);
+        }
+    }
+
+};
+/* harmony default export */ __webpack_exports__["a"] = (Timeline);
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__loadImages__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__timeline_js__ = __webpack_require__(1);
 
 
 
@@ -147,8 +334,8 @@ var FrameAnimation = {
             //|0相当于向下取整
             // console.log('time', time);
             var index = Math.min(time / self.interval | 0, len);
-            console.log('index-1', index-1);
-            var positionArr = positions[index-1].split(' ');
+            // console.log('index-1', index - 1);
+            var positionArr = positions[index - 1].split(' ');
             ele.style.backgroundPosition = positionArr[0] + 'px ' + positionArr[1] + 'px';
             if (index >= len) {
                 next();
@@ -175,7 +362,7 @@ var FrameAnimation = {
     },
     //高级用法，用于自定义每一帧要做的事情
     enterFrame: function(taskFn) {
-        return this._add(taskFn, TASK_SYNC);
+        return this._add(taskFn, TASK_ASYNC);
     },
     then: function(callback) {
         var taskFn = function(next) {
@@ -183,6 +370,14 @@ var FrameAnimation = {
             next();
         };
         return this._add(taskFn, TASK_SYNC);
+    },
+    wait: function(time) {
+        var fn = function(next) {
+            setTimeout(function() {
+                next();
+            }, time);
+        };
+        return this._add(fn,TASK_SYNC);
     },
     start: function(interval) {
         if (this.state !== STATE_INITAL) {
@@ -221,11 +416,16 @@ var FrameAnimation = {
         return this;
     },
     dispose: function() {
-        this.taskQueue = null;
-        this.timeline.stop();
-        this.timeline = null;
-        this.index = 0;
-        return this;
+        if (this.state !== STATE_INITAL) {
+            this.taskQueue = [];
+            this.timeline.stop();
+            this.timeline = null;
+            this.index = 0;
+            this.state = STATE_INITAL;
+            return this;
+
+        }
+
     },
     //重复上一个任务
     //times为任务重复的次数
@@ -271,9 +471,11 @@ var FrameAnimation = {
     _next: function() {
         this.index++;
         if (this.index >= this.taskQueue.length) {
+            // this.dispose();
             return;
         }
         this._runTask();
+
     },
     //执行任务队列中当前index的任务
     //队列并不会自发从头执行到尾
@@ -319,7 +521,7 @@ var FrameAnimation = {
 
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -393,105 +595,6 @@ function loadImage(imgs, callback, timeout) {
     }
 }
 /* harmony default export */ __webpack_exports__["a"] = (loadImage);
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-// 该模块用于处理异步请求
-const STATE_INITAL = 'inital';
-const STATE_START = 'start';
-const STATE_STOP = 'stop';
-const DEFAULT_INTERVAL = 20;
-/**
- * raf
- */
-var requestAnimationFrame = (function() {
-    return window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame ||
-        //所有都不支持，用setTimeout兼容
-        function(callback) {
-            return window.setTimeout(callback, (callback.interval || DEFAULT_INTERVAL)); // make interval as precise as possible.
-        };
-})();
-
-/**
- * cancel raf
- */
-var cancelAnimationFrame = (function() {
-    return window.cancelAnimationFrame ||
-        window.webkitCancelAnimationFrame ||
-        window.mozCancelAnimationFrame ||
-        window.oCancelAnimationFrame ||
-        function(id) {
-            window.clearTimeout(id);
-        };
-})();
-
-var Timeline = {
-    init: function() {
-        this.reqId = 0;
-        this.state = STATE_INITAL;
-    },
-    start: function(interval) {
-        if (this.state === STATE_START) {
-            return;
-        }
-        console.log('执行start');
-        this.interval = interval || DEFAULT_INTERVAL;
-        this.state = STATE_START;
-        this.startTime = +new Date();
-        this.__startTimeline(this.startTime);
-
-    },
-    // 参数time为动画开始执行到现在执行的时间
-    // time在startTime中传递
-    onEnterFrame: function(time) {},
-    stop: function() {
-        console.log('进入stop', this.state === STATE_START);
-        if (this.state !== STATE_START) {
-            return;
-        }
-        console.log('执行stop');
-        this.state = STATE_STOP;
-        this.passedTime = (+new Date()) - this.startTime;
-        cancelAnimationFrame(this.reqId);
-        this.reqId = null;
-    },
-    restart: function() {
-        if (this.state !== STATE_STOP) {
-            return;
-        }
-        if (!this.passedTime || !this.interval) {
-            return;
-        }
-        this.state = STATE_START;
-        this.__startTimeline((+new Date()) - this.passedTime);
-    },
-    __startTimeline: function(startTime) {
-        var self = this;
-        var lastTime = +new Date();
-        this.startTime = startTime;
-        nextTick();
-        // console.log('startTime', startTime);
-
-        function nextTick() {
-           // self.stop();
-            var curTime = +new Date();
-            if (curTime - lastTime >= self.interval) {
-                lastTime = curTime;
-                self.onEnterFrame(curTime - self.startTime);
-            }
-            self.reqId = requestAnimationFrame(nextTick);
-        }
-    }
-
-};
-/* harmony default export */ __webpack_exports__["a"] = (Timeline);
 
 
 /***/ })

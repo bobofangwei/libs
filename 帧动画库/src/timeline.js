@@ -50,7 +50,7 @@ var Timeline = {
     // time在startTime中传递
     onEnterFrame: function(time) {},
     stop: function() {
-        console.log('进入stop', this.state === STATE_START);
+        // console.log('进入stop', this.state === STATE_START);
         if (this.state !== STATE_START) {
             return;
         }
@@ -70,6 +70,7 @@ var Timeline = {
         this.state = STATE_START;
         this.__startTimeline((+new Date()) - this.passedTime);
     },
+
     __startTimeline: function(startTime) {
         var self = this;
         var lastTime = +new Date();
@@ -78,13 +79,19 @@ var Timeline = {
         // console.log('startTime', startTime);
 
         function nextTick() {
-           // self.stop();
             var curTime = +new Date();
+            // 这句话的位置很关键，关于这个bug调试了很久
+            // 如果将这句话放在if判断的语句之后
+            // 会发现定时器关闭不了
+            // 这是因为在onenterFrame可能会调用next，next会关闭timelne
+            // 如果放在下面，关闭的是上一次的定时器，紧接着reqId又被马上赋值了
+            self.reqId = requestAnimationFrame(nextTick);
             if (curTime - lastTime >= self.interval) {
                 lastTime = curTime;
                 self.onEnterFrame(curTime - self.startTime);
             }
-            self.reqId = requestAnimationFrame(nextTick);
+            // 不能放在这里
+            // self.reqId = requestAnimationFrame(nextTick);
         }
     }
 

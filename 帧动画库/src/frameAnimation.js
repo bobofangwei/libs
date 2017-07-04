@@ -38,8 +38,8 @@ var FrameAnimation = {
             //|0相当于向下取整
             // console.log('time', time);
             var index = Math.min(time / self.interval | 0, len);
-            console.log('index-1', index-1);
-            var positionArr = positions[index-1].split(' ');
+            // console.log('index-1', index - 1);
+            var positionArr = positions[index - 1].split(' ');
             ele.style.backgroundPosition = positionArr[0] + 'px ' + positionArr[1] + 'px';
             if (index >= len) {
                 next();
@@ -66,7 +66,7 @@ var FrameAnimation = {
     },
     //高级用法，用于自定义每一帧要做的事情
     enterFrame: function(taskFn) {
-        return this._add(taskFn, TASK_SYNC);
+        return this._add(taskFn, TASK_ASYNC);
     },
     then: function(callback) {
         var taskFn = function(next) {
@@ -74,6 +74,14 @@ var FrameAnimation = {
             next();
         };
         return this._add(taskFn, TASK_SYNC);
+    },
+    wait: function(time) {
+        var fn = function(next) {
+            setTimeout(function() {
+                next();
+            }, time);
+        };
+        return this._add(fn,TASK_SYNC);
     },
     start: function(interval) {
         if (this.state !== STATE_INITAL) {
@@ -112,11 +120,16 @@ var FrameAnimation = {
         return this;
     },
     dispose: function() {
-        this.taskQueue = null;
-        this.timeline.stop();
-        this.timeline = null;
-        this.index = 0;
-        return this;
+        if (this.state !== STATE_INITAL) {
+            this.taskQueue = [];
+            this.timeline.stop();
+            this.timeline = null;
+            this.index = 0;
+            this.state = STATE_INITAL;
+            return this;
+
+        }
+
     },
     //重复上一个任务
     //times为任务重复的次数
@@ -162,9 +175,11 @@ var FrameAnimation = {
     _next: function() {
         this.index++;
         if (this.index >= this.taskQueue.length) {
+            // this.dispose();
             return;
         }
         this._runTask();
+
     },
     //执行任务队列中当前index的任务
     //队列并不会自发从头执行到尾
