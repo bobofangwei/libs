@@ -1,0 +1,19 @@
+{
+  "name": "animation",
+  "version": "1.0.0",
+  "description": "通用动画库",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --progress --color --watch --config webpack.config.js"
+  },
+  "keywords": [
+    "animation"
+  ],
+  "author": "Liweibo <bobofangwei@163.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "html-webpack-plugin": "2.29.0",
+    "webpack": "3.0.0"
+  }
+}
