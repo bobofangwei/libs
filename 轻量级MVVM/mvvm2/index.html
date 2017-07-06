@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>剖析vue源码，实现MVVM</title>
+    <style>
+        .active{
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <input type="text" v-model="name">
+        <div>
+            <label for="">name:</label>
+            <span>{{name}}</span>
+        </div>
+        <div>
+            <label for="">age:</label>
+            <span v-text="age"></span>
+        </div>
+        <div>
+            <label for="">爱好:</label>
+            <span v-html="hobby.sport"></span>
+        </div>
+        <div>
+            <lable>孩子:</lable>
+            <span v-text="child.name"></span>
+        </div>
+        <button v-on:click="dosomething" v-class='isActive'>事件测试按钮</button>
+    </div>
+    <script src="./js/util.js"></script>
+    <script src="./js/observer.js"></script>
+    <script src="./js/watcher.js"></script>
+    <script src="./js/compile.js"></script>
+    <script src="./js/mvvm.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+</html>
