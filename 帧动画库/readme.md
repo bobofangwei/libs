@@ -4,7 +4,7 @@
 1. 本动画库用于实现帧动画，所谓帧动画，是指通过改变雪碧图背景图片的位置，或者图片的src来实现类似gif动图的效果
 2. 其源代码和相关素材主要参考了
 [animtion](https://bobofangwei.github.io/libs/%E5%B8%A7%E5%8A%A8%E7%94%BB%E5%BA%93/build/index.html)，因此本帧动画库严格来说并非原创，重点在于通过阅读他人源代码,在逐行动手实现的过程中，思考，总结，进而有所收获和升华的过程
-3. 为在js中引入模块机制，本帧动画库基于ebpack进行打包
+3. 为在js中引入模块机制，本帧动画库基于webpack进行打包
 
 ## 调用方法
 以下为两个示例,其效果可以参见[DEMO](https://github.com/bobofangwei/libs/tree/master/%E5%B8%A7%E5%8A%A8%E7%94%BB%E5%BA%93)  
